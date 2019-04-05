@@ -4,4 +4,7 @@
 # Wing IDE project file                                          #
 ##################################################################
 [project attributes]
+proj.file-list = [loc('main.py'),
+                  loc('prob.py'),
+                  loc('solver.py')]
 proj.file-type = 'shared'
