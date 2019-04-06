@@ -3,8 +3,7 @@ __authors__ = ["Melissa", "Ronaldo", "Pedro Pablo"]
 
 import numpy as np
 
-from solver import Heuristic
-from prob import Constrain, Problem
+from heuristic import *
 
 
 def obj_func(x):
