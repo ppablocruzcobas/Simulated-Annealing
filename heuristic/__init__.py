@@ -5,3 +5,4 @@ print(f'Invoking __init__.py for {__name__}')
 
 from heuristic.prob import Constrain, Problem
 from heuristic.solver import Heuristic
+from heuristic.graphic import Application

@@ -4,7 +4,9 @@
 # Wing IDE project file                                          #
 ##################################################################
 [project attributes]
-proj.file-list = [loc('main.py'),
-                  loc('prob.py'),
-                  loc('solver.py')]
+proj.file-list = [loc('heuristic/graphic.py'),
+                  loc('heuristic/prob.py'),
+                  loc('heuristic/solver.py'),
+                  loc('heuristic/__init__.py'),
+                  loc('main.py')]
 proj.file-type = 'shared'

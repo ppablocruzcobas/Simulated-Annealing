@@ -19,30 +19,47 @@ class Constrain:
     """
     def __init__(self, func, lower=None, upper=None,
                  strict_lower=False, strict_upper=False):
-        self.func = func
-        self.lower = lower
-        self.upper = upper
-        self.strict_lower = strict_lower
-        self.strict_upper = strict_upper
+        self._func = func
+        self._lower = lower
+        self._upper = upper
+        self._strict_lower = strict_lower
+        self._strict_upper = strict_upper
 
     def __call__(self, x):
         """
         Returns `True` if the constrain is satisfied, `False` otherwise 
         """
         result = True
-        if self.lower is not None:
-            if self.strict_lower is True:
-                result = result and (self.func(x) > self.lower).all() == True
+        if self._lower is not None:
+            if self._strict_lower is True:
+                result = result and (self._func(x) >
+                                     self._lower).all() == True
             else:
-                result = result and (self.func(x) >=
-                                     self.lower).all() == True
-        if self.upper is not None:
-            if self.strict_upper is True:
-                result = result and (self.func(x) < self.upper).all() == True
+                result = result and (self._func(x) >=
+                                     self._lower).all() == True
+        if self._upper is not None:
+            if self._strict_upper is True:
+                result = result and (self._func(x) <
+                                     self._upper).all() == True
             else:
-                result = result and (self.func(x) <=
-                                     self.upper).all() == True
+                result = result and (self._func(x) <=
+                                     self._upper).all() == True
         return result
+
+    def has_lower(self):
+        return (self._lower is not None)
+
+    def has_upper(self):
+        return (self._upper is not None)
+
+    def get_lower(self):
+        return self._lower
+
+    def get_upper(self):
+        return self._upper
+
+
+# ############################################################################ #
 
 
 class Problem:
@@ -56,45 +73,45 @@ class Problem:
         'max' for maximum
     """
     def __init__(self, obj_func, constrains=None, dim=1, obj='min'):
-        self.obj_func = obj_func
-        self.constrains = constrains
-        self.dim = dim
-        self.obj = obj
-        self.solution = None
+        self._obj_func = obj_func
+        self._constrains = constrains
+        self._dim = dim
+        self._obj = obj
+        self._solution = None
 
     def __call__(self, x):
         """
         Returns the evaluation of the `obf_func` in the vector/real value x
         """
-        return self.obj_func(x)
+        return self._obj_func(x)
 
     def get_constrains(self):
         """
         Returns a list with all the constrains of the problem
         """
-        return self.constrains
+        return self._constrains
 
     def get_dim(self):
         """
         Returns the dimension of the problem
         """
-        return self.dim
+        return self._dim
 
     def get_obj(self):
         """
         Returns what should be done with `obj_min` ('min' or 'max')
         """
-        return self.obj
+        return self._obj
 
     def get_solution(self):
         """
         Returns the best solution obtained at the moment of the calling
         """
-        return self.solution
+        return self._solution
 
     def set_solution(self, solution):
         """
         Update the solution in case of improvement.
         Should be use only by the `Heuristic`  class
         """
-        self.solution = solution
+        self._solution = solution
