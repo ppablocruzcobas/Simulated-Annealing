@@ -13,7 +13,7 @@ class Heuristic:
     `max_iters` = maximun number of iterations (stop criteria) \n
     `t_iters` = number of iterations to wait before lower temperature
     """
-    def __init__(self, t0, max_iters, t_iters, delta=1e-2):
+    def __init__(self, t0=50, max_iters=1000, t_iters=50, delta=1e-2):
         self._t0 = t0
         self._max_iters = max_iters
         self._t_iters = t_iters
@@ -42,25 +42,26 @@ class Heuristic:
         
         self._s = self._neighbour(self._s)
 
-        # self._app.append(self._T(), v)
+        self._app.append(self._T(), self._problem(self._s))
         
         satisfied = True
         for constrain in self._constrains:
             satisfied = satisfied and constrain(self._s)
             
         if satisfied == True:
-            print(self._s)
             v = self._problem(self._s)
             if self._problem.get_obj() == 'min':
                 if v < self._value:
                     self._value = v
                     self._problem.set_solution(self._s)
-                    print(self._s)
+                    if self._verbose:
+                        print(self._s)
             elif self._problem.get_obj() == 'max':
                 if v > self._value:
                     self._value = v
                     self._problem.set_solution(self._s)
-                    print(self._s)
+                    if self._verbose:
+                        print(self._s)
 
     def solve(self, problem, graph=True, verbose=True):
         self._problem = problem
@@ -88,6 +89,6 @@ class Heuristic:
         b = np.matrix(b)
         self._s = a + (b - a) * np.random.random_sample(problem.get_dim())
 
-        if graph == True:
+        if graph:
             self._app.show_graph()
         self._app.exec_()
