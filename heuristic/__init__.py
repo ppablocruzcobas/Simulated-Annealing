@@ -1,8 +1,7 @@
+from __future__ import absolute_import
 
 __authors__ = ['Melissa', 'Ronaldo', 'Pedro Pablo']
+__all__ = ['Annealer']
+__version__ = "0.1.0"
 
-print(f'Invoking __init__.py for {__name__}')
-
-from heuristic.prob import Constrain, Problem
-from heuristic.solver import Heuristic
-from heuristic.graphic import Application
+from heuristic.anneal import Annealer

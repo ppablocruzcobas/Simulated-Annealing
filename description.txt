@@ -1,4 +1,0 @@
-Resolver el problema:
-
-min {txQx+tpx | b<= x <= h} con b, h \in R^n;
-b y h binarias
