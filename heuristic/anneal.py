@@ -9,11 +9,6 @@ __authors__ = ["Melissa", "Ronaldo", "Pedro Pablo"]
 
 import abc
 import copy
-import datetime
-import math
-import pickle
-import random
-import signal
 import sys
 import time
 import numpy as np
@@ -22,8 +17,10 @@ import numpy as np
 class Annealer(object):
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, initial_state=None, t_max=2500, t_min=1.5,
+    def __init__(self, initial_state=None,
+                 params_auto=True, t_max=5000, t_min=0.1,
                  max_iters=50000, updates=500):
+        self.params_auto = params_auto
         self.t_max = t_max
         self.t_min = t_min
         self.max_iters = max_iters
@@ -31,7 +28,6 @@ class Annealer(object):
 
         # Defaults
         self.copy_strategy = 'deepcopy'
-        self.save_state_on_exit = True
 
         # Placeholders
         self.best_state = None
@@ -42,18 +38,27 @@ class Annealer(object):
         else:
             raise ValueError('No valid value supplied for `initial_state`')
 
+    def round_figures(self, x, n):
+        """
+        Returns x rounded to n significant figures.
+        """
+        return round(x, int(n - np.ceil(np.log10(abs(x)))))
+
     def time_string(self, seconds):
-        """Returns time in seconds as a string formatted HHHH:MM:SS."""
+        """
+        Returns time in seconds as a string formatted HHHH:MM:SS.
+        """
         s = int(round(seconds))  # round to nearest second
         h, s = divmod(s, 3600)   # get hours and remainder
         m, s = divmod(s, 60)     # split remainder into minutes and seconds
         return '%4i:%02i:%02i' % (h, m, s)
 
     def copy_state(self, state):
-        """Returns an exact copy of the provided state
+        """
+        Returns an exact copy of the provided state
         Implemented according to self.copy_strategy, one of
 
-        * deepcopy : use copy.deepcopy (slow but reliable)
+        * deepcopy: use copy.deepcopy (slow but reliable)
         * slice: use list slices (faster but only works if state is list-like)
         * method: use the state's copy() method
         """
@@ -64,9 +69,7 @@ class Annealer(object):
         elif self.copy_strategy == 'method':
             return state.copy()
         else:
-            raise RuntimeError('No implementation found for ' +
-                               'the self.copy_strategy "%s"' %
-                               self.copy_strategy)
+            return None
 
     def get_state(self):
         return self.state
@@ -74,18 +77,9 @@ class Annealer(object):
     def get_state_as_array(self):
         return np.array(self.state)
 
-    def save_state(self, f_name='state.txt'):
-        """Saves state to file"""
-        try:
-            np.savetxt(f_name, self.state)
-            print()
-            print('***********************************************************')
-            print("State saved to file %s" % f_name)
-        except:
-            raise RuntimeWarning("Cannot save state to file %s" % f_name)
-
     def update(self, *args, **kwargs):
-        """Wrapper for internal update.
+        """
+        Wrapper for internal update.
 
         If you override the self.update method,
         you can chose to call the self.default_update method
@@ -93,8 +87,9 @@ class Annealer(object):
         """
         self.default_update(*args, **kwargs)
 
-    def default_update(self, step, T, E):
-        """Default update, outputs to stderr.
+    def default_update(self, step, T, E, accepts, improves):
+        """
+        Default update, outputs to stderr.
 
         Prints the current temperature, energy, acceptance rate,
         improvement rate, elapsed time, and remaining time.
@@ -106,27 +101,78 @@ class Annealer(object):
         thermal excitation.
 
         The improvement rate indicates the percentage of moves since the
-        last update that strictly decreased the energy.  At high
+        last update that strictly decreased the energy. At high
         temperatures it will include both moves that improved the overall
         state and moves that simply undid previously accepted moves that
         increased the energy by thermal excititation.  At low temperatures
         it will tend toward zero as the moves that can decrease the energy
         are exhausted and moves that would increase the energy are no longer
-        thermally accessible."""
+        thermally accessible.
+        """
 
         elapsed = time.time() - self.start
         if step == 0:
-            print(' Temperature        Energy       Elapsed',
+            print(' Temperature        Energy        Accept        Improve      Elapsed',
                   file=sys.stderr)
-        print('\r%12.5f  %12.2f    %s' %
-              (T, E, self.time_string(elapsed)), file=sys.stderr, end="\r")
+        print('\r%12.4f  %12.4f %12.0f%%  %12.0f%%   %s' %
+              (T, E, 100 * accepts, 100 * improves, self.time_string(elapsed)),
+              file=sys.stderr, end="\r")
         sys.stderr.flush()
 
-    def anneal(self):
-        """Minimizes the energy of a system by simulated annealing.
+    """
+    Explores the annealing landscape and
+    estimates optimal temperature settings.
+    """
+    def find_best_parameters(self, steps=500):
+        """
+        Anneals a system at constant temperature and returns the 
+        rate of acceptance.
+        """
+        def run(T, steps):
+            E = self.energy()
+            prev_energy = E
+            accepts, improves = 0, 0
+            for _ in range(steps):
+                self.state = self.neighbour()
+                E = self.energy()
+                dE = prev_energy - E
+                if self.probability(dE, T) >= np.random.random():
+                    accepts += 1
+                    if dE > .0:
+                        improves += 1                    
+                    prev_energy = E
+                else:
+                    E = prev_energy
+            return float(accepts) / steps, float(improves) / steps
 
-        Parameters
-        state : an initial arrangement of the system
+        T = .0
+        E = self.energy()
+
+        while T <= 1e-10:
+            self.state = self.neighbour()
+            T = abs(self.energy() - E)
+
+        # Search for t_max - a temperature that gives 99% acceptance
+        acceptance, improvement = run(T, steps)
+        while acceptance > .99:
+            T /= 2
+            acceptance, improvement = run(T, steps)
+        while acceptance < .99:
+            T *= 2
+            acceptance, improvement = run(T, steps)
+        self.t_max = T
+
+        # Search for t_min - a temperature that gives 0% improvement
+        while improvement > .0 and T > 1e-4:
+            T /= 2
+            acceptance, improvement = run(T, steps)
+        self.t_min = T
+
+        return self.t_max, self.t_min
+
+    def anneal(self):
+        """
+        Minimizes the energy of a system by Simulated Annealing.
 
         Returns
         (state, energy): the best state and energy found.
@@ -134,14 +180,19 @@ class Annealer(object):
         step = 0
         self.start = time.time()
 
-        # Precompute factor for exponential cooling from Tmax to Tmin
-        if self.t_min <= 0.0:
-            raise Exception('Exponential cooling requires a minimum "\
-                "temperature greater than zero.')
-        t_factor = -math.log(self.t_max / self.t_min)
+        print("-------------------------------------------------------------------")
+        
+        if self.params_auto is True:
+            print()
+            print("Calculating optimal parameters...")
+            self.find_best_parameters()
 
-        # Note initial state
-        T = self.t_max
+        print()
+        print("Tmax = %6.4f" % (self.t_max))
+        print("Tmin = %6.4f" % (self.t_min))
+        print("Iterations =", (self.max_iters))
+        print()
+            
         E = self.energy()
 
         prev_state = self.copy_state(self.state)
@@ -150,45 +201,73 @@ class Annealer(object):
         self.best_state = self.copy_state(self.state)
         self.best_energy = E
 
+        accepts, improves = 0, 0
+
         if self.updates > 0:
             update_every = self.max_iters / self.updates
-            self.update(step, T, E)
+            self.update(step, self.t_max, E, 1, 1)
 
         # Attempt moves to new states
         while step < self.max_iters:
             step += 1
-            T = self.t_max * math.exp(t_factor * step / self.max_iters)
+            T = self.temperature(step, self.max_iters,
+                                 self.t_max, self.t_min)
             self.state = self.neighbour()
             E = self.energy()
-            dE = E - prev_energy
-            if dE > 0.0 and 100 * math.exp(-dE / T) / self.max_iters < random.random():
-                # Restore previous state
-                self.state = self.copy_state(prev_state)
-                E = prev_energy
-            else:
+            dE = prev_energy - E
+            if self.probability(dE, T) >= np.random.random():
                 # Accept new state and compare to best state
+                accepts += 1
                 prev_state = self.copy_state(self.state)
                 prev_energy = E
+                if dE > 0:
+                    improves += 1
                 if E < self.best_energy:
                     self.best_state = self.copy_state(self.state)
                     self.best_energy = E
+            else:
+                # Restore previous state
+                self.state = self.copy_state(prev_state)
+                E = prev_energy
             if self.updates > 1:
                 if (step // update_every) > ((step - 1) // update_every):
-                    self.update(step, T, E)
+                    self.update(step, T, E,
+                                float(accepts) / update_every,
+                                float(improves) / update_every)
+                    accepts, improves = 0, 0
 
-        self.state = self.copy_state(self.best_state)
-        if self.save_state_on_exit:
-            self.save_state()
+        print()
+        print()
+        print("Best Energy =", self.best_energy)
+        print()
+        print("-------------------------------------------------------------------")
 
         # Return best state and energy
         return self.best_state, self.best_energy
 
+
+    def probability(self, dE, T):
+        if dE >= 0:
+            return 1.0
+        else:
+            return np.exp(dE / T)
+
     @abc.abstractmethod
     def neighbour(self):
-        """Create a state change"""
+        """
+        Create a state change
+        """
+        pass
+
+    @abc.abstractmethod
+    def temperature(self, step, steps, t_max, t_min):
         pass
 
     @abc.abstractmethod
     def energy(self):
-        """Calculate state's energy"""
+        """
+        Calculate state's energy
+        """
         pass
+
+
