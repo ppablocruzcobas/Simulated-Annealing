@@ -42,7 +42,7 @@ class Annealer(object):
         """
         Returns x rounded to n significant figures.
         """
-        return round(x, int(n - np.ceil(np.log10(abs(x)))))
+        return round(x, n)
 
     def time_string(self, seconds):
         """
@@ -72,27 +72,24 @@ class Annealer(object):
             return None
 
     def get_state(self):
+        """
+        Returns the current state of the system.
+        """
         return self.state
 
     def get_state_as_array(self):
+        """
+        Returns the current state of the system as an array.
+        to .
+        """
         return np.array(self.state)
 
-    def update(self, *args, **kwargs):
-        """
-        Wrapper for internal update.
-
-        If you override the self.update method,
-        you can chose to call the self.default_update method
-        from your own Annealer.
-        """
-        self.default_update(*args, **kwargs)
-
-    def default_update(self, step, T, E, accepts, improves):
+    def update(self, step, T, E, accepts, improves):
         """
         Default update, outputs to stderr.
 
         Prints the current temperature, energy, acceptance rate,
-        improvement rate, elapsed time, and remaining time.
+        improvement rate, elapsed time.
 
         The acceptance rate indicates the percentage of moves since the last
         update that were accepted by the Metropolis algorithm.  It includes
@@ -109,7 +106,6 @@ class Annealer(object):
         are exhausted and moves that would increase the energy are no longer
         thermally accessible.
         """
-
         elapsed = time.time() - self.start
         if step == 0:
             print(' Temperature        Energy        Accept        Improve      Elapsed',
@@ -119,16 +115,16 @@ class Annealer(object):
               file=sys.stderr, end="\r")
         sys.stderr.flush()
 
-    """
-    Explores the annealing landscape and
-    estimates optimal temperature settings.
-    """
     def find_best_parameters(self, steps=500):
         """
-        Anneals a system at constant temperature and returns the 
-        rate of acceptance.
+        Explores the annealing landscape and
+        estimates optimal temperature settings.
         """
-        def run(T, steps):
+        def simulate(T, steps):
+            """
+            Anneals a system at constant temperature and returns the 
+            rate of acceptance and the rate of improvement.
+            """
             E = self.energy()
             prev_energy = E
             accepts, improves = 0, 0
@@ -153,19 +149,19 @@ class Annealer(object):
             T = abs(self.energy() - E)
 
         # Search for t_max - a temperature that gives 99% acceptance
-        acceptance, improvement = run(T, steps)
+        acceptance, improvement = simulate(T, steps)
         while acceptance > .99:
             T /= 2
-            acceptance, improvement = run(T, steps)
+            acceptance, improvement = simulate(T, steps)
         while acceptance < .99:
             T *= 2
-            acceptance, improvement = run(T, steps)
+            acceptance, improvement = simulate(T, steps)
         self.t_max = T
 
         # Search for t_min - a temperature that gives 0% improvement
         while improvement > .0 and T > 1e-4:
             T /= 2
-            acceptance, improvement = run(T, steps)
+            acceptance, improvement = simulate(T, steps)
         self.t_min = T
 
         return self.t_max, self.t_min
@@ -247,6 +243,9 @@ class Annealer(object):
 
 
     def probability(self, dE, T):
+        """
+        Returns the probability of accept 
+        """
         if dE >= 0:
             return 1.0
         else:
@@ -255,18 +254,24 @@ class Annealer(object):
     @abc.abstractmethod
     def neighbour(self):
         """
-        Create a state change
+        Create a state change.
+        Has to be implemented in the problem.
         """
         pass
 
     @abc.abstractmethod
     def temperature(self, step, steps, t_max, t_min):
+        """
+        Calculate the temperature of the system.
+        Has to be implemented in the problem.
+        """
         pass
 
     @abc.abstractmethod
     def energy(self):
         """
-        Calculate state's energy
+        Calculate state's energy.
+        Has to be implemented in the problem.
         """
         pass
 

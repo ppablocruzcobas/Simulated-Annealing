@@ -24,11 +24,11 @@ def create_params(dim):
 
     
 if __name__ == "__main__":
-    Q, p, a, b = create_params(10)
+    Q, p, a, b = create_params(5)
     energies = []
 
     for i in range(10):
-        q_problem = QuadricProblem(Q, p, list(a), list(b))
+        q_problem = QuadricProblem01(Q, p, list(a), list(b))
         f_state, f_energy = q_problem.anneal()
         energies.append(f_energy)
         np.savetxt("state" + str(len(p)) + ".txt", np.array(f_state))

@@ -5,6 +5,7 @@
 ##################################################################
 [project attributes]
 proj.file-list = [loc('heuristic/anneal.py'),
+                  loc('heuristic/quadric01.py'),
                   loc('heuristic/quadric.py'),
                   loc('heuristic/__init__.py'),
                   loc('main.py')]
