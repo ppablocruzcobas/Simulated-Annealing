@@ -6,7 +6,7 @@ import random as r
 import numpy as np
 
 
-class QuadricProblem01(Annealer):
+class QuadricProblemInteger(Annealer):
     """
     Class to solve the quadric problem
     min xTQx + pTx s.t. a <= x <= b; a, b \in R^{n}:
@@ -16,14 +16,14 @@ class QuadricProblem01(Annealer):
     `u_limit`: the vector of upper limits
     """
     def __init__(self, Q, p, l_limit=None, u_limit=None):
-        self.l_limit = np.array(l_limit)
-        self.u_limit = np.array(u_limit)
+        self.l_limit = np.ceil(np.array(l_limit))
+        self.u_limit = np.floor(np.array(u_limit))
         self.Q = Q
         self.p = p
         # Call the constructor of the `Anneal` class with only
         # `initial_state` (mandatory); all others parameters have default values
-        super(QuadricProblem01, self).__init__(
-            initial_state=list((self.l_limit + self.u_limit) / 2))
+        super(QuadricProblemInteger, self).__init__(
+            initial_state=np.ceil(self.l_limit))
 
     def neighbour(self, size=1, delta=None):
         """
@@ -32,10 +32,13 @@ class QuadricProblem01(Annealer):
         and returns only one element randomly choiced
         """
         state = self.get_state()
-        p1, p2 = np.random.randint(0, len(state), 2)
-        state[p1] += state[p2]
-        state[p2] = state[p1] - state[p2]
-        state[p1] -= state[p2]
+        for i in range(len(state)):
+            p = r.choice([-1, 0, 1])
+            state[i] += p
+            if state[i] < self.l_limit[i]:
+                state[i] = self.l_limit[i]
+            if state[i] > self.u_limit[i]:
+                state[i] = self.u_limit[i]
         return state
     
     def temperature(self, step, steps, t_max, t_min):

@@ -7,8 +7,8 @@ import numpy as np
 def create_params(dim):
     Q = 3 + 2 * np.random.random_sample((dim, dim))
     p = 1 + 3 * np.random.random_sample(dim)
-    a = np.random.randint(5, 7, dim)
-    b = np.random.randint(9, 15, dim)
+    a = 1 + 2 * np.random.random_sample(dim)
+    b = 4 + 3 * np.random.random_sample(dim)
     
     print()
     print("-------------------------------------------------------------------")
@@ -24,11 +24,11 @@ def create_params(dim):
 
     
 if __name__ == "__main__":
-    Q, p, a, b = create_params(5)
+    Q, p, a, b = create_params(1)
     energies = []
 
-    for i in range(10):
-        q_problem = QuadricProblem01(Q, p, list(a), list(b))
+    for i in range(1):
+        q_problem = QuadricProblemInteger(Q, p, list(a), list(b))
         f_state, f_energy = q_problem.anneal()
         energies.append(f_energy)
         np.savetxt("state" + str(len(p)) + ".txt", np.array(f_state))
