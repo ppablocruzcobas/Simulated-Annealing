@@ -1,11 +1,11 @@
 from __future__ import absolute_import
 
 __authors__ = ['Melissa', 'Ronaldo', 'Pedro Pablo']
-__all__ = ['Annealer', 'QuadricProblem', 'QuadricProblemBinary',
-           'QuadricProblemInteger']
+__all__ = ['Annealer', 'QuadricRealProblem', 'QuadricBinaryProblem',
+           'QuadricIntegerProblem']
 __version__ = "0.1.0"
 
 from heuristic.anneal import Annealer
-from heuristic.quadric import QuadricProblem
-from heuristic.quadric_binary import QuadricProblemBinary
-from heuristic.quadric_integer import QuadricProblemInteger
+from heuristic.quadric import QuadricRealProblem
+from heuristic.quadric import QuadricBinaryProblem
+from heuristic.quadric import QuadricIntegerProblem

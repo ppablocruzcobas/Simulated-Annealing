@@ -18,8 +18,8 @@ class Annealer(object):
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, initial_state=None,
-                 params_auto=True, t_max=5000, t_min=0.1,
-                 max_iters=50000, updates=500):
+                 params_auto=True, t_max=1e+10, t_min=1e-4,
+                 max_iters=10000, updates=1000):
         self.params_auto = params_auto
         self.t_max = t_max
         self.t_min = t_min
@@ -115,7 +115,7 @@ class Annealer(object):
               file=sys.stderr, end="\r")
         sys.stderr.flush()
 
-    def find_best_parameters(self, steps=500):
+    def find_best_parameters(self, steps=1000):
         """
         Explores the annealing landscape and
         estimates optimal temperature settings.
@@ -144,21 +144,19 @@ class Annealer(object):
         T = .0
         E = self.energy()
 
-        while T <= 1e-10:
+        while T <= 1e-4:
             self.state = self.neighbour()
             T = abs(self.energy() - E)
 
         # Search for t_max - a temperature that gives 99% acceptance
         acceptance, improvement = simulate(T, steps)
-        while acceptance > .99:
-            T /= 2
-            acceptance, improvement = simulate(T, steps)
-        while acceptance < .99:
-            T *= 2
+        while acceptance < .99 and T < 1e+10:
+            T *= 1.15
             acceptance, improvement = simulate(T, steps)
         self.t_max = T
 
         # Search for t_min - a temperature that gives 0% improvement
+        acceptance, improvement = simulate(T, steps)
         while improvement > .0 and T > 1e-4:
             T /= 2
             acceptance, improvement = simulate(T, steps)
@@ -184,8 +182,8 @@ class Annealer(object):
             self.find_best_parameters()
 
         print()
-        print("Tmax = %6.4f" % (self.t_max))
-        print("Tmin = %6.4f" % (self.t_min))
+        print("Tmax = %10.4f" % (self.t_max))
+        print("Tmin = %10.4f" % (self.t_min))
         print("Iterations =", (self.max_iters))
         print()
             
@@ -208,28 +206,30 @@ class Annealer(object):
             step += 1
             T = self.temperature(step, self.max_iters,
                                  self.t_max, self.t_min)
-            self.state = self.neighbour()
-            E = self.energy()
-            dE = prev_energy - E
-            if self.probability(dE, T) >= np.random.random():
-                # Accept new state and compare to best state
-                accepts += 1
-                prev_state = self.copy_state(self.state)
-                prev_energy = E
-                if dE > 0:
-                    improves += 1
-                if E < self.best_energy:
-                    self.best_state = self.copy_state(self.state)
-                    self.best_energy = E
-            else:
-                # Restore previous state
-                self.state = self.copy_state(prev_state)
-                E = prev_energy
+
+            for i in range(100):
+                self.state = self.neighbour()
+                E = self.energy()
+                dE = prev_energy - E
+                if self.probability(dE, T) >= np.random.random():
+                    # Accept new state and compare to best state
+                    accepts += 1
+                    prev_state = self.copy_state(self.state)
+                    prev_energy = E
+                    if dE > 0:
+                        improves += 1
+                    if E < self.best_energy:
+                        self.best_state = self.copy_state(self.state)
+                        self.best_energy = E
+                else:
+                    # Restore previous state
+                    self.state = self.copy_state(prev_state)
+                    E = prev_energy
             if self.updates > 1:
                 if (step // update_every) > ((step - 1) // update_every):
                     self.update(step, T, E,
-                                float(accepts) / update_every,
-                                float(improves) / update_every)
+                                float(accepts / 100) / update_every,
+                                float(improves / 100) / update_every)
                     accepts, improves = 0, 0
 
         print()
