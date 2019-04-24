@@ -140,12 +140,13 @@ class Annealer(object):
         self.t_max = T
 
         # Search for t_min - a temperature that gives 0% improvement
-        acceptance, improvement = simulate(T, steps)
+        # acceptance, improvement = simulate(T, steps)
         # t_min cannot be smaller than 1e-4
-        while improvement > .0 and T > 1e-4:
-            T /= 2
-            acceptance, improvement = simulate(T, steps)
-        self.t_min = T
+        # while improvement > .0 and T > 1e-4:
+        #    T /= 2
+        #    acceptance, improvement = simulate(T, steps)
+        # self.t_min = T
+        self.t_min = 1e-4
 
         return self.t_max, self.t_min, self.state
 
@@ -178,14 +179,14 @@ class Annealer(object):
         self.best_state = self.copy_state(self.state)
         self.best_energy = E
 
-        accepts, improves = 0, 0
+        accepts, improves, not_improves = 0, 0, 0
 
         if self.updates > 0:
             update_every = self.max_iters / self.updates
             self.update(step, self.t_max, E, 1, 1)
 
         # Attempt moves to new states
-        while step < self.max_iters:
+        while step < self.max_iters and not_improves < 4:
             step += 1
             T = self.temperature(step, self.max_iters,
                                  self.t_max, self.t_min)
@@ -208,6 +209,8 @@ class Annealer(object):
                     # Restore previous state
                     self.state = self.copy_state(prev_state)
                     E = prev_energy
+            if accepts == 0 and improves == 0:
+                not_improves += 1
             if self.updates > 1:
                 if (step // update_every) > ((step - 1) // update_every):
                     self.update(step, T, E,
