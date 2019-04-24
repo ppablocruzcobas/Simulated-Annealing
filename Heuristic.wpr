@@ -6,6 +6,7 @@
 [project attributes]
 proj.file-list = [loc('heuristic/anneal.py'),
                   loc('heuristic/quadric.py'),
+                  loc('heuristic/test.py'),
                   loc('heuristic/__init__.py'),
                   loc('main.py')]
 proj.file-type = 'shared'

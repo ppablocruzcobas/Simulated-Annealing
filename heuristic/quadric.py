@@ -22,8 +22,7 @@ class QuadricRealProblem(Annealer):
         self.p = p
         # Call the constructor of the `Anneal` class with only
         # `initial_state` (mandatory); all others parameters have default values
-        super(QuadricRealProblem, self).__init__(
-            initial_state=list((self.l_limit + self.u_limit) / 2))
+        super(QuadricRealProblem, self).__init__(initial_state=initial_state)
 
     def neighbour(self, size=25, delta=1e-2):
         """
@@ -66,18 +65,14 @@ class QuadricBinaryProblem(Annealer):
     min xTQx + pTx s.t. a <= x <= b; a, b \in R^{n}:
     `Q`: a square matrix
     `p`: a vector
-    `l_limit`: the vector of lower limits
-    `u_limit`: the vector of upper limits
     """
-    def __init__(self, Q, p, l_limit=None, u_limit=None):
-        self.l_limit = np.array(l_limit)
-        self.u_limit = np.array(u_limit)
+    def __init__(self, Q, p, initial_state=None):
         self.Q = Q
         self.p = p
         # Call the constructor of the `Anneal` class with only
         # `initial_state` (mandatory); all others parameters have default values
         super(QuadricBinaryProblem, self).__init__(
-            initial_state=list((self.l_limit + self.u_limit) / 2))
+            initial_state=initial_state)
 
     def neighbour(self, size=1, delta=None):
         """
@@ -91,10 +86,10 @@ class QuadricBinaryProblem(Annealer):
         return state
     
     def temperature(self, step, steps, t_max, t_min):
-        # alpha = np.power(self.t_min / self.t_max, 1 / self.max_iters)
-        # return t_max * alpha ** step
-        k = -np.log(t_max / t_min)
-        return t_max * np.exp(k * step / steps)
+        alpha = np.power(self.t_min / self.t_max, 1 / self.max_iters)
+        return t_max * alpha ** step
+        # k = -np.log(t_max / t_min)
+        # return t_max * np.exp(k * step / steps)
 
     def energy(self):
         state = self.get_state_as_array()
@@ -113,7 +108,7 @@ class QuadricIntegerProblem(Annealer):
     `l_limit`: the vector of lower limits
     `u_limit`: the vector of upper limits
     """
-    def __init__(self, Q, p, l_limit=None, u_limit=None):
+    def __init__(self, Q, p, l_limit=None, u_limit=None, initial_state=None):
         self.l_limit = np.ceil(np.array(l_limit))
         self.u_limit = np.floor(np.array(u_limit))
         self.Q = Q
@@ -121,7 +116,7 @@ class QuadricIntegerProblem(Annealer):
         # Call the constructor of the `Anneal` class with only
         # `initial_state` (mandatory); all others parameters have default values
         super(QuadricIntegerProblem, self).__init__(
-            initial_state=self.u_limit)
+            initial_state=initial_state)
 
     def neighbour(self, size=1, delta=None):
         """

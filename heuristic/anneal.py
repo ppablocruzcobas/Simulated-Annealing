@@ -18,9 +18,8 @@ class Annealer(object):
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, initial_state=None,
-                 params_auto=True, t_max=1e+10, t_min=1e-4,
-                 max_iters=10000, updates=1000):
-        self.params_auto = params_auto
+                 t_max=1e+10, t_min=1e-4,
+                 max_iters=1000, updates=25):
         self.t_max = t_max
         self.t_min = t_min
         self.max_iters = max_iters
@@ -115,7 +114,7 @@ class Annealer(object):
               file=sys.stderr, end="\r")
         sys.stderr.flush()
 
-    def find_best_parameters(self, steps=1000):
+    def find_best_parameters(self, steps=500):
         """
         Explores the annealing landscape and
         estimates optimal temperature settings.
@@ -141,6 +140,10 @@ class Annealer(object):
                     E = prev_energy
             return float(accepts) / steps, float(improves) / steps
 
+        print("-------------------------------------------------------------------")
+        print()
+        print("Calculating optimal parameters...")
+
         T = .0
         E = self.energy()
 
@@ -164,7 +167,7 @@ class Annealer(object):
 
         return self.t_max, self.t_min
 
-    def anneal(self):
+    def anneal(self, initial_state=None):
         """
         Minimizes the energy of a system by Simulated Annealing.
 
@@ -176,17 +179,13 @@ class Annealer(object):
 
         print("-------------------------------------------------------------------")
         
-        if self.params_auto is True:
-            print()
-            print("Calculating optimal parameters...")
-            self.find_best_parameters()
-
         print()
         print("Tmax = %10.4f" % (self.t_max))
         print("Tmin = %10.4f" % (self.t_min))
         print("Iterations =", (self.max_iters))
         print()
-            
+
+        self.state = initial_state
         E = self.energy()
 
         prev_state = self.copy_state(self.state)
@@ -207,7 +206,7 @@ class Annealer(object):
             T = self.temperature(step, self.max_iters,
                                  self.t_max, self.t_min)
 
-            for i in range(100):
+            for i in range(25):
                 self.state = self.neighbour()
                 E = self.energy()
                 dE = prev_energy - E
@@ -228,8 +227,8 @@ class Annealer(object):
             if self.updates > 1:
                 if (step // update_every) > ((step - 1) // update_every):
                     self.update(step, T, E,
-                                float(accepts / 100) / update_every,
-                                float(improves / 100) / update_every)
+                                float(accepts / 25) / update_every,
+                                float(improves / 25) / update_every)
                     accepts, improves = 0, 0
 
         print()
