@@ -25,9 +25,6 @@ class Annealer(object):
         self.max_iters = max_iters
         self.updates = updates
 
-        # Defaults
-        self.copy_strategy = 'deepcopy'
-
         # Placeholders
         self.best_state = None
         self.best_energy = None
@@ -55,20 +52,8 @@ class Annealer(object):
     def copy_state(self, state):
         """
         Returns an exact copy of the provided state
-        Implemented according to self.copy_strategy, one of
-
-        * deepcopy: use copy.deepcopy (slow but reliable)
-        * slice: use list slices (faster but only works if state is list-like)
-        * method: use the state's copy() method
         """
-        if self.copy_strategy == 'deepcopy':
-            return copy.deepcopy(state)
-        elif self.copy_strategy == 'slice':
-            return state[:]
-        elif self.copy_strategy == 'method':
-            return state.copy()
-        else:
-            return None
+        return copy.deepcopy(state)
 
     def get_state(self):
         """
@@ -79,7 +64,7 @@ class Annealer(object):
     def get_state_as_array(self):
         """
         Returns the current state of the system as an array.
-        to .
+        Can be used to make some computations go faster.
         """
         return np.array(self.state)
 
@@ -88,7 +73,7 @@ class Annealer(object):
         Default update, outputs to stderr.
 
         Prints the current temperature, energy, acceptance rate,
-        improvement rate, elapsed time.
+        improvement rate and elapsed time.
 
         The acceptance rate indicates the percentage of moves since the last
         update that were accepted by the Metropolis algorithm.  It includes
@@ -97,13 +82,7 @@ class Annealer(object):
         thermal excitation.
 
         The improvement rate indicates the percentage of moves since the
-        last update that strictly decreased the energy. At high
-        temperatures it will include both moves that improved the overall
-        state and moves that simply undid previously accepted moves that
-        increased the energy by thermal excititation.  At low temperatures
-        it will tend toward zero as the moves that can decrease the energy
-        are exhausted and moves that would increase the energy are no longer
-        thermally accessible.
+        last update that strictly decreased the energy.
         """
         elapsed = time.time() - self.start
         if step == 0:
@@ -118,6 +97,7 @@ class Annealer(object):
         """
         Explores the annealing landscape and
         estimates optimal temperature settings.
+        `steps` = number of iterations (if bigger then better but slower)
         """
         def simulate(T, steps):
             """
@@ -153,24 +133,28 @@ class Annealer(object):
 
         # Search for t_max - a temperature that gives 99% acceptance
         acceptance, improvement = simulate(T, steps)
+        # t_max cannot be bigger than 1e+10
         while acceptance < .99 and T < 1e+10:
-            T *= 1.15
+            T *= 1.5
             acceptance, improvement = simulate(T, steps)
         self.t_max = T
 
         # Search for t_min - a temperature that gives 0% improvement
         acceptance, improvement = simulate(T, steps)
+        # t_min cannot be smaller than 1e-4
         while improvement > .0 and T > 1e-4:
             T /= 2
             acceptance, improvement = simulate(T, steps)
         self.t_min = T
 
-        return self.t_max, self.t_min
+        return self.t_max, self.t_min, self.state
 
     def anneal(self, initial_state=None):
         """
         Minimizes the energy of a system by Simulated Annealing.
-
+        `initial_state` = state where to start running the algorithm
+        It should be the one obtained in `find_best_parameters`.
+        
         Returns
         (state, energy): the best state and energy found.
         """

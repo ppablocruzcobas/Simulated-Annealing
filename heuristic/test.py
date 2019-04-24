@@ -8,18 +8,43 @@ import os
 
 
 class BaseTest:
+    """
+    Base Class that implements basic methods for testing
+    `dims` = list of dimensions
+    `tests` = how many times solve each problem
+    `t_type` = type of problem ('binary' or 'integer')
+    """
     def __init__(self, dims, tests, t_type):
         self.dims = dims
         self.tests = tests
         self.t_type = t_type
 
+        # If folders doesn't exists, then create them
         for dim in dims:
             os.makedirs(self.path(dim), exist_ok=True)
 
     def path(self, dim):
+        """
+        According to `dim`, it returns the path where the data will be saved.
+        Example:
+        The data of a binary problem of dimension N will be saved in
+        `data/N/binary/`
+        """
         return "data/" + str(dim) + "/" + self.t_type + "/"
 
     def create_params(self, dim):
+        """
+        Returns a tuple of parameters for the problem according to `dim`
+        (dimension)
+        `Q` = a matrix of shape `dim` x `dim`
+                values between -5 and 5 randomly generated
+        `p` = a vector of length `dim`
+                values between -5 and 5 randomly generated
+        `a` = lower limit (only used in the integer problem)
+                values between -5 and 5 randomly generated
+        `b` = upper limit (only used in the integer problem)
+                values between 10 and 20 randomly generated
+        """
         Q = -5 + 10 * np.random.random_sample((dim, dim))
         p = -5 + 10 * np.random.random_sample(dim)
         if self.t_type == 'integer':
@@ -43,6 +68,10 @@ class BaseTest:
             return Q, p
 
     def run(self):
+        """
+        Execute the tests and save all results (including image) in corresping
+        path
+        """
         for dim in self.dims:
             if self.t_type == 'integer':
                 Q, p, a, b = self.create_params(dim)
@@ -54,7 +83,7 @@ class BaseTest:
                 init = list(np.zeros(dim))
                 q_problem = QuadricBinaryProblem(Q, p,
                                                  initial_state=init)
-            q_problem.find_best_parameters()
+            t_max, t_min, init = q_problem.find_best_parameters()
             
             states = []
             energies = []
@@ -92,10 +121,16 @@ class BaseTest:
 
 
 class BinaryTest(BaseTest):
+    """
+    Class to create and execute binary tests.
+    """
     def __init__(self, dims, tests):
         super(BinaryTest, self).__init__(dims, tests, 'binary')
 
 
 class IntegerTest(BaseTest):
+    """
+    Class to create and execute integer tests.
+    """
     def __init__(self, dims, tests):
         super(IntegerTest, self).__init__(dims, tests, 'integer')
