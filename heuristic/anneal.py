@@ -114,7 +114,7 @@ class Annealer(object):
                 if self.probability(dE, T) >= np.random.random():
                     accepts += 1
                     if dE > .0:
-                        improves += 1                    
+                        improves += 1
                     prev_energy = E
                 else:
                     E = prev_energy
@@ -155,7 +155,7 @@ class Annealer(object):
         Minimizes the energy of a system by Simulated Annealing.
         `initial_state` = state where to start running the algorithm
         It should be the one obtained in `find_best_parameters`.
-        
+
         Returns
         (state, energy): the best state and energy found.
         """
@@ -163,7 +163,7 @@ class Annealer(object):
         self.start = time.time()
 
         print("-------------------------------------------------------------------")
-        
+
         print()
         print("Tmax = %10.4f" % (self.t_max))
         print("Tmin = %10.4f" % (self.t_min))
@@ -227,7 +227,6 @@ class Annealer(object):
         # Return best state and energy
         return self.best_state, self.best_energy
 
-
     def probability(self, dE, T):
         """
         Returns the probability of accept 
@@ -260,5 +259,3 @@ class Annealer(object):
         Has to be implemented in the problem.
         """
         pass
-
-

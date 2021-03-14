@@ -2,3 +2,4 @@ heuristic/__pycache__/
 *.txt
 data.zip
 data/
+.venv/
